@@ -1,4 +1,3 @@
-import os
 
 """Logique métier de l'application (fonctions pures, faciles à tester)."""
 
