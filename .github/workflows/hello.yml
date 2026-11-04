@@ -1,0 +1,16 @@
+name: Hello Actions
+
+on: push
+
+jobs:
+  hello:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Message de bienvenue
+        run: echo "Bonjour, mon premier workflow GitHub Actions !"
+
+      - name: Afficher la branche et l'auteur
+        run: |
+          echo "Branche : ${{ github.ref_name }}"
+          echo "Auteur : ${{ github.actor }}"
