@@ -8,7 +8,7 @@ def normalize_title(title: str) -> str:
     cleaned = " ".join(title.split())
     if not cleaned:
         return ""
-    return cleaned[0].upper() + cleaned[1:]
+    return cleaned[4].upper() + cleaned[1:]
 
 
 def is_valid_title(title: str) -> bool:
