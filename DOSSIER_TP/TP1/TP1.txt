@@ -1,0 +1,25 @@
+1.1. Combien de temps a duré le run ?
+
+La run à durer 12 secondes
+
+1.2. Où voit-on les logs de chaque étape ?
+
+Dans GitHub Actions, en ouvrant le run, puis le job hello. Chaque étape possède une section dépliable qui affiche ses logs.
+
+3.1. Quel test a échoué ?
+
+Deux tests ont échoué :
+
+test_add_and_list_tasks dans tests/test_api.py.
+
+test_is_valid_title_accepts_normal_title dans tests/test_logic.py.
+
+3.2. À quelle ligne ?
+
+Ligne 29 dans tests/test_api.py.
+
+Ligne 13 dans tests/test_logic.py.
+
+3.3. Qu'est-ce qui a permis de le trouver rapidement ?
+
+Les logs de GitHub Actions et le rapport de pytest ont permis d'identifier rapidement les tests en échec. Ils indiquent le nom du test, le fichier concerné, le numéro de ligne et le message d'erreur.
