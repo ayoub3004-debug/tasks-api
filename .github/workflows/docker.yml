@@ -12,6 +12,8 @@ permissions:
   contents: read
 
 jobs:
+
+  # JOB 1 : Vérifier le code
   test:
     runs-on: ubuntu-latest
     steps:
@@ -29,6 +31,8 @@ jobs:
       - name: Run tests
         run: pytest
 
+
+  # JOB 2 : Construire et publier l'image Docker
   build:
     needs: test
     runs-on: ubuntu-latest
@@ -85,6 +89,8 @@ jobs:
           build-args: |
             APP_VERSION=${{ steps.app-version.outputs.value }}
 
+
+  # JOB 3 : Déploiement staging
   deploy-staging:
     name: Deploy to staging
     needs: build
@@ -113,16 +119,21 @@ jobs:
         run: |
           for attempt in {1..15}; do
             echo "Test de démarrage $attempt/15"
+
             if curl -f http://localhost:8000/health && curl -f http://localhost:8000/version; then
               echo "Test staging réussi !"
               exit 0
             fi
+
             sleep 2
           done
+
           echo "Échec du test staging"
           docker logs tasks-api
           exit 1
 
+
+  # JOB 4 : Déploiement production avec approbation
   deploy-production:
     name: Deploy to production
     needs: deploy-staging
@@ -145,6 +156,7 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           IMAGE="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/tasks-api:${VERSION}"
+
           echo "Image utilisée : $IMAGE"
           docker pull "$IMAGE"
           docker run -d --name tasks-api -p 8000:8000 "$IMAGE"
@@ -153,12 +165,50 @@ jobs:
         run: |
           for attempt in {1..15}; do
             echo "Test de démarrage $attempt/15"
+
             if curl -f http://localhost:8000/health && curl -f http://localhost:8000/version; then
               echo "Test production réussi !"
               exit 0
             fi
+
             sleep 2
           done
+
           echo "Échec du test production"
           docker logs tasks-api
           exit 1
+
+
+  # JOB 5 : Mettre à jour automatiquement tasks-config
+  update-config:
+    needs: deploy-production
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    env:
+      VERSION: ${{ github.ref_name }}
+
+    steps:
+      - name: Récupérer le dépôt applicatif
+        uses: actions/checkout@v6
+
+      - name: Récupérer le dépôt de configuration
+        uses: actions/checkout@v6
+        with:
+          repository: ayoub3004-debug/tasks-config
+          token: ${{ secrets.CONFIG_REPO_TOKEN }}
+          path: config
+
+      - name: Mettre à jour la version de l'image
+        run: bash scripts/set-image-tag.sh config/k8s/deployment.yaml "${VERSION#v}"
+
+      - name: Commiter et pousser dans tasks-config
+        run: |
+          cd config
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add k8s/deployment.yaml
+          git commit -m "Déploiement de tasks-api ${VERSION#v}"
+          git push
